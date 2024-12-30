@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"greenlight.skyespirates.net/internal/data"
+	"greenlight.skyespirates.net/internal/validator"
 )
 
 var movies = []data.Movie{
@@ -47,6 +48,23 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 		app.badRequestResponse(w, r, err)
 		return
 	}
+
+	movie := &data.Movie{
+		Title: input.Title,
+		Year: input.Year,
+		Runtime: input.Runtime,
+		Genres: input.Genres,
+	}
+
+	v := validator.New()
+
+
+	if data.ValidateMovie(v, movie); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+		
+
 	fmt.Fprintf(w, "%+v\n", input)
 	// app.writeJSON(w, http.StatusOK, envelope{"movie": input}, nil)
 }
