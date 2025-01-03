@@ -4,11 +4,11 @@ I make this notes as a guide for my self in the future, in case I want to run th
 
 ## DEPENDENCIES
 
-1. go version 1.23
-2. postgres version 17.2 (run in docker btw)
-3. migrate cli version 4.18
-4. air version 1.61 (watch file changes) -> optional
-5. make or GNU make version 3.82 (automate script) -> optional
+1. go version 1.23 [golang](https://go.dev/dl/)
+2. postgres version 17.2 (run in docker btw) [postgres](https://hub.docker.com/_/postgres)
+3. migrate cli version 4.18 [migrate](https://github.com/golang-migrate/migrate/releases)
+4. air version 1.61 (watch file changes) -> optional [air](https://github.com/air-verse/air)
+5. make or GNU make version 3.82 (automate script) [make](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download?use_mirror=onboardcloud&download=) -> optional
 
 ## POSTGRES
 
