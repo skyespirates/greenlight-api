@@ -4,38 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"greenlight.skyespirates.net/internal/data"
 	"greenlight.skyespirates.net/internal/validator"
 )
-
-var movies = []data.Movie{
-	{
-		ID:        1,
-		CreatedAt: time.Now(),
-		Title:     "Casablanca",
-		Runtime:   102,
-		Genres:    []string{"drama", "romance", "war"},
-		Version:   1,
-	},
-	{
-		ID:        2,
-		CreatedAt: time.Now(),
-		Title:     "Cool Hand Luke",
-		Runtime:   126,
-		Genres:    []string{"crime", "drama"},
-		Version:   1,
-	},
-	{
-		ID:        3,
-		CreatedAt: time.Now(),
-		Title:     "Bullitt",
-		Runtime:   114,
-		Genres:    []string{"action", "crime", "thriller"},
-		Version:   1,
-	},
-}
 
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
@@ -102,10 +74,33 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) getAllMoviesHandler(w http.ResponseWriter, r *http.Request) {
-	err := app.writeJSON(w, http.StatusOK, envelope{"movies": movies}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
+	var input struct {
+		Title  string
+		Genres []string
+		data.Filters
 	}
+
+	v := validator.New()
+
+	q := r.URL.Query()
+
+	input.Title = app.readString(q, "title", "")
+	input.Genres = app.readCSV(q, "genres", []string{})
+
+	input.Filters.Page = app.readInt(q, "page", 1, v)
+	input.Filters.PageSize = app.readInt(q, "page_size", 10, v)
+
+	input.Filters.Sort = app.readString(q, "sort", "id")
+
+	input.Filters.SortSafeList = []string{"id", "title", "year", "runtime", "-id", "-title", "-year", "-runtime"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
+
 }
 
 func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
