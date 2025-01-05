@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
+	"greenlight.skyespirates.net/internal/validator"
 )
 
 func (app *application) readIDParam(r *http.Request) (int64, error) {
@@ -49,7 +51,6 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	// forbid unknown field on request body
 	dec.DisallowUnknownFields()
 
-
 	err := dec.Decode(dst)
 	if err != nil {
 		var syntaxError *json.SyntaxError
@@ -57,33 +58,33 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		var invalidUnmarshalError *json.InvalidUnmarshalError
 
 		switch {
-			case errors.As(err, &syntaxError):
-				return fmt.Errorf("request body contains badly-formed JSON (at character %d)", syntaxError.Offset)
-			
-			case errors.Is(err, io.ErrUnexpectedEOF):
-				return errors.New("request body contains badly-formed JSON")
+		case errors.As(err, &syntaxError):
+			return fmt.Errorf("request body contains badly-formed JSON (at character %d)", syntaxError.Offset)
 
-			case errors.As(err, &unmarshalTypeError):
-				if unmarshalTypeError.Field != "" {
-					return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Field)
-				}
-				return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
-			
-			case errors.Is(err, io.EOF):
-				return errors.New("request body must not be empty")
-			
-			case strings.HasPrefix(err.Error(), "json: unknown field "):
-				fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-				return fmt.Errorf("body contains unknown key %s", fieldName)
-				
-			case err.Error() == "http: request body too large":
-				return fmt.Errorf("body must not be larger than %d bytes", maxBytes)				
-			
-			case errors.As(err, &invalidUnmarshalError):
-				panic(err)
-			
-			default:
-				return err
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			return errors.New("request body contains badly-formed JSON")
+
+		case errors.As(err, &unmarshalTypeError):
+			if unmarshalTypeError.Field != "" {
+				return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Field)
+			}
+			return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
+
+		case errors.Is(err, io.EOF):
+			return errors.New("request body must not be empty")
+
+		case strings.HasPrefix(err.Error(), "json: unknown field "):
+			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
+			return fmt.Errorf("body contains unknown key %s", fieldName)
+
+		case err.Error() == "http: request body too large":
+			return fmt.Errorf("body must not be larger than %d bytes", maxBytes)
+
+		case errors.As(err, &invalidUnmarshalError):
+			panic(err)
+
+		default:
+			return err
 		}
 	}
 	// forbid more than 1 json value in request body
@@ -91,6 +92,36 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	if err != io.EOF {
 		return errors.New("body must only contain a single JSON value")
 	}
-	
+
 	return nil
+}
+
+func (app *application) readString(q url.Values, key string, defaultValue string) string {
+	s := q.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+	return s
+}
+
+func (app *application) readInt(q url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := q.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+	return i
+}
+
+func (app *application) readCSV(q url.Values, key string, defaultValue []string) []string {
+	csv := q.Get(key)
+	if csv == "" {
+		return defaultValue
+	}
+	return strings.Split(csv, ",")
 }
