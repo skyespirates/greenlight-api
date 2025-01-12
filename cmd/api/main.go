@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -80,19 +78,21 @@ func main() {
 	// Declare a HTTP server with some sensible timeout settings, which listens on the
 	// port provided in the config struct and uses the servemux we created above as the
 	// handler.
-	srv := &http.Server{
-		Addr:         fmt.Sprintf("0.0.0.0:%d", cfg.port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
+	// srv := &http.Server{
+	// 	Addr:         fmt.Sprintf("0.0.0.0:%d", cfg.port),
+	// 	Handler:      app.routes(),
+	// 	IdleTimeout:  time.Minute,
+	// 	ReadTimeout:  10 * time.Second,
+	// 	WriteTimeout: 30 * time.Second,
+	// }
 	// Start the HTTP server.
-	logger.PrintInfo("starting server", map[string]string{
-		"address": srv.Addr,
-		"env":     cfg.env,
-	})
-	err = srv.ListenAndServe()
+	// logger.PrintInfo("starting server", map[string]string{
+	// 	"address": srv.Addr,
+	// 	"env":     cfg.env,
+	// })
+	// err = srv.ListenAndServe()
+
+	err = app.serve()
 	logger.PrintFatal(err, nil)
 }
 
