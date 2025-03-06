@@ -5,6 +5,7 @@ import (
 	"greenlight.skyespirates.net/internal/data"
 	"greenlight.skyespirates.net/internal/validator"
 	"net/http"
+	"time"
 )
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +49,17 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 	app.background(func() {
-		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+		dt := map[string]interface{}{
+			"activationToken": token.Plaintext,
+			"user":            user,
+		}
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", dt)
 		if err != nil {
 			app.logger.PrintError(err, nil)
 		}
