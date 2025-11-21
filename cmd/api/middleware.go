@@ -36,8 +36,6 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 		clients = make(map[string]*client)
 	)
 
-	// limiter := rate.NewLimiter(2, 4)
-
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -55,10 +53,6 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if app.config.limiter.enabled {
-			// if !limiter.Allow() {
-			// 	app.rateLimitExceededResponse(w, r)
-			// 	return
-			// }
 
 			ip, _, err := net.SplitHostPort(r.RemoteAddr)
 			if err != nil {
@@ -69,7 +63,6 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 			mu.Lock()
 
 			if _, found := clients[ip]; !found {
-				// clients[ip] = rate.NewLimiter(2, 4)
 				clients[ip] = &client{limiter: rate.NewLimiter(2, 4)}
 			}
 

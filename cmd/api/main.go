@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"greenlight.skyespirates.net/internal/mailer"
 	"os"
 	"sync"
 	"time"
+
+	"greenlight.skyespirates.net/internal/mailer"
 
 	_ "github.com/lib/pq"
 	"greenlight.skyespirates.net/internal/data"
@@ -55,7 +56,7 @@ func main() {
 	// corresponding flags are provided.
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
-	flag.StringVar(&cfg.db.dsn, "dsn", "postgres://greenlight:greenlight@localhost:5432/greenlight?sslmode=disable", "Postgres DSN")
+	flag.StringVar(&cfg.db.dsn, "dsn", "postgres://postgres:bmwb1gtr@localhost:5432/greenlight?sslmode=disable", "Postgres DSN")
 
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
@@ -73,8 +74,6 @@ func main() {
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@greenlight.skyespirates.net>", "SMTP sender")
 
 	flag.Parse()
-	// Initialize a new logger which writes messages to the standard out stream,
-	// prefixed with the current date and time.
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
 	db, err := openDB(cfg)
@@ -85,30 +84,12 @@ func main() {
 
 	logger.PrintInfo("database connection pool established", nil)
 
-	// Declare an instance of the application struct, containing the config struct and
-	// the logger.
 	app := &application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
-	// Declare a HTTP server with some sensible timeout settings, which listens on the
-	// port provided in the config struct and uses the servemux we created above as the
-	// handler.
-	// srv := &http.Server{
-	// 	Addr:         fmt.Sprintf("0.0.0.0:%d", cfg.port),
-	// 	Handler:      app.routes(),
-	// 	IdleTimeout:  time.Minute,
-	// 	ReadTimeout:  10 * time.Second,
-	// 	WriteTimeout: 30 * time.Second,
-	// }
-	// Start the HTTP server.
-	// logger.PrintInfo("starting server", map[string]string{
-	// 	"address": srv.Addr,
-	// 	"env":     cfg.env,
-	// })
-	// err = srv.ListenAndServe()
 
 	err = app.serve()
 	logger.PrintFatal(err, nil)
