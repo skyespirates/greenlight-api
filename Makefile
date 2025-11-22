@@ -1,5 +1,26 @@
-migrate-add:
-	migrate create -ext sql -dir migrations -seq $(name)
+migrations_path=./migrations
+dsn=postgres://postgres:bmwb1gtr@0.0.0.0:5432/greenlight?sslmode=disable
 
-migrate-run:
-	migrate -database postgres://greenlight:greenlight@0.0.0.0:5432/greenlight?sslmode=disable -path migrations up
+.PHONY: api/start
+api/start:
+	@go run .\cmd\api
+
+.PHONY: api/dev
+api/dev:
+	@air
+
+.PHONY: db/migrations/new
+db/migrations/new:
+	@migrate create -ext sql -dir $(migrations_path) -seq $(name)
+
+.PHONY: db/migrations/up
+db/migrations/up:
+	@migrate -database $(dsn) -path $(migrations_path) up
+
+.PHONY: db/migrations/down
+db/migrations/down:
+	@migrate -database $(dsn) -path $(migrations_path) down
+
+.PHONY: db/migrations/version
+db/migrations/version:
+	@migrate -database $(dsn) -path $(migrations_path) version
