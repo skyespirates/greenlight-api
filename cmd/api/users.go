@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
-	"greenlight.skyespirates.net/internal/data"
-	"greenlight.skyespirates.net/internal/validator"
 	"net/http"
 	"time"
+
+	"greenlight.skyespirates.net/internal/data"
+	"greenlight.skyespirates.net/internal/validator"
 )
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -120,4 +121,55 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) changePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		CurrentPassword    string `json:"current_password"`
+		NewPassword        string `json:"new_password"`
+		ConfirmNewPassword string `json:"confirm_new_password"`
+	}
+
+	user := app.contextGetUser(r)
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// validate password
+	// make sure current password corrent
+	// ensure newPassword and CorfirmNewPassword same
+	match, err := user.Password.Matches(input.CurrentPassword)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	if !match {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	v := validator.New()
+	data.ValidatePasswordPlaintext(v, input.NewPassword)
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	if input.NewPassword != input.ConfirmNewPassword {
+		app.badRequestResponse(w, r, errors.New("new passwords are not equal"))
+		return
+	}
+
+	err = app.models.Users.ChangePassword(user, input.NewPassword)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 }

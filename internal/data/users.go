@@ -218,3 +218,30 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 
 	return &user, nil
 }
+
+func (m UserModel) ChangePassword(user *User, newPassword string) error {
+	err := user.Password.Set(newPassword)
+	if err != nil {
+		return err
+	}
+
+	query := `UPDATE users SET password_hash = $1, version = version + 1 WHERE id = $2 AND version = $3 RETURNING version`
+
+	args := []interface{}{user.Password.hash, user.ID, user.Version}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = m.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
+	if err != nil {
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
+}
