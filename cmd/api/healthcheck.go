@@ -6,7 +6,7 @@ import (
 )
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
+	info := map[string]string{
 		"status":      "available",
 		"environment": app.config.env,
 		"version":     version,
@@ -15,8 +15,9 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 	// demonstrate graceful shutdown
 	time.Sleep(4 * time.Second)
 
-	err := app.writeJSON(w, http.StatusOK, envelope{"healthcheck": data}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
+	data := map[string]interface{}{
+		"info": info,
 	}
+
+	app.successResponse(w, http.StatusOK, "health check information", data)
 }
