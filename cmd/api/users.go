@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
-	"greenlight.skyespirates.net/internal/data"
-	"greenlight.skyespirates.net/internal/validator"
 	"net/http"
 	"time"
+
+	"greenlight.skyespirates.net/internal/data"
+	"greenlight.skyespirates.net/internal/validator"
 )
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -65,10 +66,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 	})
 
-	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
+	data := map[string]interface{}{
+		"user": user,
 	}
+
+	app.successResponse(w, http.StatusAccepted, "registered", data)
+
 }
 
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,8 +119,14 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	data := struct {
+		User *data.User `json:"user"`
+	}{User: user}
+
+	app.successResponse(w, http.StatusOK, "user activated successfully", data)
+
+	// err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// }
 }

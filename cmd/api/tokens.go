@@ -74,10 +74,16 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 	// 	return
 	// }
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"authentication_token": string(token)}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	data := struct {
+		Token string `json:"authentication_token"`
+	}{string(token)}
+
+	app.successResponse(w, http.StatusOK, "token created successfully", data)
+
+	// err = app.writeJSON(w, http.StatusOK, envelope{"authentication_token": string(token)}, nil)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// }
 
 }
 
@@ -126,6 +132,11 @@ func (app *application) generateActivationToken(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	app.writeJSON(w, http.StatusAccepted, envelope{"activation_token": token.Plaintext}, nil)
+	data := struct {
+		Token string `json:"activation_token"`
+	}{Token: token.Plaintext}
+	app.successResponse(w, http.StatusAccepted, "generate activation token", data)
+
+	// app.writeJSON(w, http.StatusAccepted, envelope{"activation_token": token.Plaintext}, nil)
 
 }
