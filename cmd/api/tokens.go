@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/pascaldekloe/jwt"
 	"greenlight.skyespirates.net/internal/data"
 	"greenlight.skyespirates.net/internal/validator"
 )
@@ -52,13 +54,27 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	token, err := app.models.Tokens.New(user.ID, 24*time.Hour, data.ScopeAuthentication)
+	var claims jwt.Claims
+	claims.Subject = strconv.FormatInt(user.ID, 10)
+	claims.Issued = jwt.NewNumericTime(time.Now())
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+	claims.NotBefore = jwt.NewNumericTime(time.Now())
+	claims.Issuer = "greenlight.skyespirates.net"
+	claims.Audiences = []string{"greenlight.skyespirates.net"}
+
+	token, err := claims.HMACSign(jwt.HS256, []byte(JWT_SECRET))
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"authentication_token": token}, nil)
+	// token, err := app.models.Tokens.New(user.ID, 24*time.Hour, data.ScopeAuthentication)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// 	return
+	// }
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"authentication_token": string(token)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/pascaldekloe/jwt"
 	"golang.org/x/time/rate"
 	"greenlight.skyespirates.net/internal/data"
-	"greenlight.skyespirates.net/internal/validator"
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -107,19 +108,38 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		token := headerParts[1]
 
-		v := validator.New()
-
-		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		claims, err := jwt.HMACCheck([]byte(token), []byte(JWT_SECRET))
+		if err != nil {
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 
-		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+		if !claims.Valid(time.Now()) {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		if claims.Issuer != "greenlight.skyespirates.net" {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		if !claims.AcceptAudience("greenlight.skyespirates.net") {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		user_id, err := strconv.ParseInt(claims.Subject, 10, 64)
+		if err != nil {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		user, err := app.models.Users.GetById(user_id)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrRecordNotFound):
 				app.invalidAuthenticationTokenResponse(w, r)
-				return
 			default:
 				app.serverErrorResponse(w, r, err)
 			}

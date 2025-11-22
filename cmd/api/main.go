@@ -17,6 +17,8 @@ import (
 
 const version = "1.0.0"
 
+const JWT_SECRET = "pei3einoh0Beem6uM6Ungohn2heiv5lah1ael4joopie5JaigeikoozaoTew2Eh6"
+
 type config struct {
 	port int
 	env  string
