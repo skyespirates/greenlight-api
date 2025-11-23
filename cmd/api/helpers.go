@@ -14,6 +14,47 @@ import (
 	"greenlight.skyespirates.net/internal/validator"
 )
 
+type BaseResponse struct {
+	Status  string        `json:"status"`
+	Message string        `json:"message"`
+	Data    *interface{}  `json:"data,omitempty"`
+	Error   *ErrorDetails `json:"error,omitempty"`
+}
+
+type ErrorDetails struct {
+	Code    int    `json:"code"`
+	Details string `json:"error"`
+}
+
+func (app *application) successResponse(w http.ResponseWriter, status int, message string, data interface{}) {
+	resp := BaseResponse{
+		Status:  "success",
+		Message: message,
+		Data:    &data,
+	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (app *application) errorsResponse(w http.ResponseWriter, status int, message string, err error) {
+	resp := BaseResponse{
+		Status:  "error",
+		Message: message,
+		Error: &ErrorDetails{
+			Code:    status,
+			Details: err.Error(),
+		},
+	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(resp)
+}
+
 func (app *application) readIDParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
 	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
@@ -26,7 +67,7 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 type envelope map[string]interface{}
 
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
-	js, err := json.MarshalIndent(data, "", "\t")
+	js, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
 		return err
 	}
