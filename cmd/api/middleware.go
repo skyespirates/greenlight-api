@@ -166,3 +166,30 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 	return app.requireAuthenticatedUser(fn)
 
 }
+
+func (app *application) logRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		start := time.Now()
+
+		reqLog := map[string]string{
+			"method": r.Method,
+			"path":   r.URL.Path,
+		}
+
+		app.logger.PrintInfo("request", reqLog)
+
+		// log.Printf("request, method: %s, path: %s, ", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+
+		duration := time.Since(start)
+		resLog := map[string]string{
+			"method":   r.Method,
+			"path":     r.URL.Path,
+			"duration": fmt.Sprintf("%dms", duration.Milliseconds()),
+		}
+
+		app.logger.PrintInfo("response", resLog)
+		// log.Printf("response, method: %s, path: %s, duration: %dms", r.Method, r.URL.Path, duration.Milliseconds())
+	})
+}
