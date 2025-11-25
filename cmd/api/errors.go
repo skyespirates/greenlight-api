@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -44,8 +45,11 @@ func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reque
 // The notFoundResponse() method will be used to send a 404 Not Found status code and
 // JSON response to the client.
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
+
 	message := "the requested resource could not be found"
-	app.errorResponse(w, r, http.StatusNotFound, message)
+	err := errors.New("404 not found")
+	app.errorsResponse(w, http.StatusNotFound, message, err)
+	// app.errorResponse(w, r, http.StatusNotFound, message)
 }
 
 // The methodNotAllowedResponse() method will be used to send a 405 Method Not Allowed

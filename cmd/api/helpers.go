@@ -23,7 +23,7 @@ type BaseResponse struct {
 
 type ErrorDetails struct {
 	Code    int    `json:"code"`
-	Details string `json:"error"`
+	Details string `json:"details"`
 }
 
 func (app *application) successResponse(w http.ResponseWriter, status int, message string, data interface{}) {

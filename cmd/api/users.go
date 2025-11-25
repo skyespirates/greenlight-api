@@ -66,10 +66,11 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 	})
 
-	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	app.successResponse(w, http.StatusAccepted, "user registered successfully", envelope{"user": user})
+	// err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// }
 }
 
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -117,10 +118,11 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	app.successResponse(w, http.StatusOK, "user activated successfully", envelope{"user": user})
+	// err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// }
 }
 
 func (app *application) changePasswordHandler(w http.ResponseWriter, r *http.Request) {
@@ -171,5 +173,6 @@ func (app *application) changePasswordHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
+	app.successResponse(w, http.StatusAccepted, "password changed successfully", envelope{"user": user})
+	// app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 }
